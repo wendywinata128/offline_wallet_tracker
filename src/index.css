@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 8%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 12%;
+
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 12%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 243 75% 59%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 10% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 8% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 8% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 243 75% 66%;
+    --primary-foreground: 240 10% 5%;
+
+    --secondary: 240 5% 14%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 14%;
+    --muted-foreground: 240 5% 60%;
+
+    --accent: 240 5% 16%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 152 55% 48%;
+    --success-foreground: 240 10% 5%;
+
+    --border: 240 5% 16%;
+    --input: 240 5% 18%;
+    --ring: 243 75% 66%;
+  }
+
+  /* Accent color presets — swap --primary / --ring only. */
+  [data-accent="indigo"] { --primary: 243 75% 59%; --ring: 243 75% 59%; }
+  [data-accent="indigo"].dark { --primary: 243 75% 66%; --ring: 243 75% 66%; }
+
+  [data-accent="violet"] { --primary: 262 83% 58%; --ring: 262 83% 58%; }
+  [data-accent="violet"].dark { --primary: 262 83% 66%; --ring: 262 83% 66%; }
+
+  [data-accent="blue"] { --primary: 217 91% 55%; --ring: 217 91% 55%; }
+  [data-accent="blue"].dark { --primary: 217 91% 62%; --ring: 217 91% 62%; }
+
+  [data-accent="emerald"] { --primary: 158 74% 38%; --ring: 158 74% 38%; }
+  [data-accent="emerald"].dark { --primary: 158 64% 46%; --ring: 158 64% 46%; }
+
+  [data-accent="rose"] { --primary: 347 77% 55%; --ring: 347 77% 55%; }
+  [data-accent="rose"].dark { --primary: 347 77% 62%; --ring: 347 77% 62%; }
+
+  [data-accent="amber"] { --primary: 32 95% 48%; --ring: 32 95% 48%; }
+  [data-accent="amber"].dark { --primary: 38 92% 55%; --ring: 38 92% 55%; }
+
+  [data-accent="teal"] { --primary: 174 72% 40%; --ring: 174 72% 40%; }
+  [data-accent="teal"].dark { --primary: 174 62% 47%; --ring: 174 62% 47%; }
+
+  /* Radius preferences */
+  [data-radius="none"] { --radius: 0rem; }
+  [data-radius="sm"] { --radius: 0.375rem; }
+  [data-radius="md"] { --radius: 0.75rem; }
+  [data-radius="lg"] { --radius: 1.1rem; }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: normal;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Disable animations when the user opts out (Settings → Appearance). */
+  [data-animations="off"] * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Compact density */
+  [data-density="compact"] {
+    --radius: 0.5rem;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Numbers alignment for money */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .glass {
+    backdrop-filter: saturate(180%) blur(12px);
+  }
+}
+
+/* Custom scrollbar for desktop */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+    border: 3px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
