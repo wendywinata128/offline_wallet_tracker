@@ -1,11 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { Wallet } from "lucide-react";
 import { NAV_ITEMS } from "@/config/nav";
-import { useProfile } from "@/store/hooks";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
-  const profile = useProfile();
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-card/50 lg:flex">
       <div className="flex h-16 items-center gap-2.5 px-6">
@@ -40,26 +39,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-3">
-        <NavLink
-          to="/settings"
-          className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
-        >
-          {profile.avatar ? (
-            <img
-              src={profile.avatar}
-              alt=""
-              className="h-9 w-9 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-sm font-semibold uppercase">
-              {profile.name.slice(0, 1)}
-            </div>
-          )}
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-medium">{profile.name}</p>
-            <p className="text-xs text-muted-foreground">{profile.currency}</p>
-          </div>
-        </NavLink>
+        <ProfileSwitcher />
       </div>
     </aside>
   );

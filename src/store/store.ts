@@ -9,11 +9,14 @@ import type {
   AppearanceSettings,
   Preferences,
   Profile,
+  ProfileSummary,
+  StoredProfile,
+  Workspace,
 } from "@/types";
 import { uid } from "@/lib/utils";
 import { storage } from "@/storage/storage";
 import { normalizeAppData } from "@/storage/validate";
-import { createEmptyData, createInitialData } from "@/data/defaults";
+import { createEmptyData } from "@/data/defaults";
 import { materializeDueRecurring } from "./recurring";
 
 type Listener = () => void;
@@ -28,16 +31,22 @@ function nowISO() {
  * selector memoization by reference works correctly.
  */
 class Store {
-  private state: AppData;
+  private workspace: Workspace;
+  private state: AppData; // active profile's data (kept in sync into workspace)
+  private profilesSnapshot: ProfileSummary[];
   private listeners = new Set<Listener>();
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    this.state = storage.load();
+    this.workspace = storage.load();
+    this.state = this.activeProfile().data;
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+
     // Materialize any recurring transactions that came due while away.
     const materialized = materializeDueRecurring(this.state, nowISO());
     if (materialized) {
       this.state = materialized;
+      this.commitActive();
       this.persist();
     }
     // Flush pending writes before the tab closes.
@@ -46,7 +55,36 @@ class Store {
     }
   }
 
+  private activeProfile(): StoredProfile {
+    return (
+      this.workspace.profiles.find((p) => p.id === this.workspace.activeId) ??
+      this.workspace.profiles[0]
+    );
+  }
+
+  private buildProfilesSnapshot(): ProfileSummary[] {
+    return this.workspace.profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      createdAt: p.createdAt,
+      active: p.id === this.workspace.activeId,
+    }));
+  }
+
+  /** Write the current active `state` back into the workspace profile list. */
+  private commitActive() {
+    this.workspace = {
+      ...this.workspace,
+      profiles: this.workspace.profiles.map((p) =>
+        p.id === this.workspace.activeId ? { ...p, data: this.state } : p,
+      ),
+    };
+  }
+
   getState = (): AppData => this.state;
+
+  /** Stable snapshot of profile metadata for the switcher UI. */
+  getProfiles = (): ProfileSummary[] => this.profilesSnapshot;
 
   subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);
@@ -59,6 +97,7 @@ class Store {
 
   private set(next: AppData) {
     this.state = { ...next, meta: { ...next.meta, lastModified: nowISO() } };
+    this.commitActive();
     this.emit();
     this.persist();
   }
@@ -67,7 +106,7 @@ class Store {
   private persist() {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      storage.save(this.state);
+      storage.save(this.workspace);
       this.saveTimer = null;
     }, 200);
   }
@@ -77,7 +116,75 @@ class Store {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
     }
-    storage.save(this.state);
+    storage.save(this.workspace);
+  }
+
+  /* ------------------------------ Profiles ----------------------------- */
+
+  /** Create a fresh profile (its own dataset) and switch to it. */
+  createProfile(name?: string): string {
+    const now = nowISO();
+    const id = storage.newProfileId();
+    const profile: StoredProfile = {
+      id,
+      name: name?.trim() || `Profile ${this.workspace.profiles.length + 1}`,
+      createdAt: now,
+      data: storage.freshData(),
+    };
+    this.workspace = {
+      ...this.workspace,
+      profiles: [...this.workspace.profiles, profile],
+      activeId: id,
+    };
+    this.state = profile.data;
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+    this.emit();
+    this.persist();
+    return id;
+  }
+
+  /** Switch the active profile, loading its entire dataset. */
+  switchProfile(id: string) {
+    if (id === this.workspace.activeId) return;
+    const target = this.workspace.profiles.find((p) => p.id === id);
+    if (!target) return;
+    this.workspace = { ...this.workspace, activeId: id };
+    this.state = target.data;
+    const materialized = materializeDueRecurring(this.state, nowISO());
+    if (materialized) {
+      this.state = materialized;
+      this.commitActive();
+    }
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+    this.emit();
+    this.persist();
+  }
+
+  renameProfile(id: string, name: string) {
+    const n = name.trim();
+    if (!n) return;
+    this.workspace = {
+      ...this.workspace,
+      profiles: this.workspace.profiles.map((p) =>
+        p.id === id ? { ...p, name: n } : p,
+      ),
+    };
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+    this.emit();
+    this.persist();
+  }
+
+  /** Delete a profile. No-op if it's the last one remaining. */
+  deleteProfile(id: string) {
+    if (this.workspace.profiles.length <= 1) return;
+    const remaining = this.workspace.profiles.filter((p) => p.id !== id);
+    const activeId =
+      this.workspace.activeId === id ? remaining[0].id : this.workspace.activeId;
+    this.workspace = { ...this.workspace, profiles: remaining, activeId };
+    this.state = (remaining.find((p) => p.id === activeId) ?? remaining[0]).data;
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+    this.emit();
+    this.persist();
   }
 
   /* ------------------------------ Wallets ------------------------------ */
@@ -378,13 +485,18 @@ class Store {
     this.set(data);
   }
 
+  /** Clear the ACTIVE profile's data (keeps other profiles intact). */
   clearAllData() {
     this.set(createEmptyData(nowISO()));
   }
 
+  /** Wipe ALL profiles and start over with a single fresh profile. */
   resetApp() {
     storage.clearAll();
-    this.set(createInitialData(nowISO()));
+    this.workspace = storage.load();
+    this.state = this.activeProfile().data;
+    this.profilesSnapshot = this.buildProfilesSnapshot();
+    this.emit();
   }
 }
 

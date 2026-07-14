@@ -22,7 +22,17 @@
           var mode = "system";
           if (raw) {
             var parsed = JSON.parse(raw);
-            mode = parsed?.data?.settings?.appearance?.theme || "system";
+            var data = null;
+            if (parsed && parsed.profiles) {
+              var active =
+                parsed.profiles.find(function (p) {
+                  return p.id === parsed.activeId;
+                }) || parsed.profiles[0];
+              data = active && active.data;
+            } else if (parsed) {
+              data = parsed.data || parsed;
+            }
+            mode = (data && data.settings && data.settings.appearance && data.settings.appearance.theme) || "system";
           }
           var dark =
             mode === "dark" ||

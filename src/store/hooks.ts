@@ -74,3 +74,9 @@ export function useSettings() {
 export function useProfile() {
   return useData().profile;
 }
+
+/** Profile switcher metadata (id, name, active). Independent of the dataset. */
+export function useProfiles() {
+  return useSyncExternalStore(store.subscribe, store.getProfiles, store.getProfiles);
+}
+

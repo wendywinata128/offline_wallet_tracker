@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Check,
   Database,
@@ -10,6 +11,7 @@ import {
   Trash2,
   Upload,
   User,
+  Users,
 } from "lucide-react";
 import type { AccentColor, RadiusPref, ThemeMode } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { ProfilesManager } from "@/features/profiles/ProfilesManager";
 import {
   useActions,
   useData,
@@ -106,6 +109,17 @@ export default function Settings() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmImport, setConfirmImport] = useState<unknown | null>(null);
 
+  const [params, setParams] = useSearchParams();
+  const [tab, setTab] = useState(params.get("tab") ?? "account");
+  useEffect(() => {
+    const t = params.get("tab");
+    if (t) setTab(t);
+  }, [params]);
+  const changeTab = (v: string) => {
+    setTab(v);
+    setParams(v === "account" ? {} : { tab: v }, { replace: true });
+  };
+
   const usage = useMemo(() => storage.getUsage(), [data]);
   const usagePct = Math.min((usage.bytes / usage.quota) * 100, 100);
   const lastSaved = storage.getLastSavedTime();
@@ -169,10 +183,13 @@ export default function Settings() {
     <div className="space-y-6">
       <PageHeader title="Settings" description="Personalize your workspace and manage your data." />
 
-      <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">
-            <User className="h-4 w-4" /> Profile
+      <Tabs value={tab} onValueChange={changeTab}>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="account">
+            <User className="h-4 w-4" /> Account
+          </TabsTrigger>
+          <TabsTrigger value="profiles">
+            <Users className="h-4 w-4" /> Profiles
           </TabsTrigger>
           <TabsTrigger value="appearance">
             <Palette className="h-4 w-4" /> Appearance
@@ -182,8 +199,13 @@ export default function Settings() {
           </TabsTrigger>
         </TabsList>
 
-        {/* PROFILE */}
-        <TabsContent value="profile" className="space-y-4">
+        {/* PROFILES (switchable datasets) */}
+        <TabsContent value="profiles" className="space-y-4">
+          <ProfilesManager />
+        </TabsContent>
+
+        {/* ACCOUNT (personal info for the active profile) */}
+        <TabsContent value="account" className="space-y-4">
           <Card className="p-5">
             <div className="flex items-center gap-4">
               {profile.avatar ? (

@@ -207,6 +207,34 @@ export interface ExportEnvelope {
   data: AppData;
 }
 
+/**
+ * A profile is a completely independent saved dataset (its own wallets,
+ * transactions, categories, settings…). Users switch between profiles like
+ * separate accounts — "Profile 1", "Profile 2", etc.
+ */
+export interface StoredProfile {
+  id: ID;
+  name: string;
+  createdAt: ISODateTime;
+  data: AppData;
+}
+
+/** The top-level persisted container: all profiles + the active one. */
+export interface Workspace {
+  version: number;
+  savedAt: ISODateTime;
+  activeId: ID;
+  profiles: StoredProfile[];
+}
+
+/** Lightweight profile metadata exposed to the UI (no heavy data payload). */
+export interface ProfileSummary {
+  id: ID;
+  name: string;
+  createdAt: ISODateTime;
+  active: boolean;
+}
+
 /* ---------- Derived / view-model types ---------- */
 
 export interface WalletComputed {
