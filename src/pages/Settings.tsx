@@ -184,7 +184,7 @@ export default function Settings() {
       <PageHeader title="Settings" description="Personalize your workspace and manage your data." />
 
       <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList className="flex-wrap">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:h-10 sm:w-auto sm:gap-0">
           <TabsTrigger value="account">
             <User className="h-4 w-4" /> Account
           </TabsTrigger>
